@@ -22,15 +22,17 @@ DEFAULT_THUMBNAIL_SIZES = {
 }
 DEFAULT_TEMPLATE = """<a href="{url}" rel="shadowbox" title="{filename}"><img src="{thumbnail}" alt="{filename}"></a>"""
 DEFAULT_GALLERY_THUMB = "thumbnail_square"
+DEFAULT_NAME_FORMAT = "{filename}_{thumbsize}"
 
 class _resizer(object):
     """ Resizes based on a text specification, see readme """
 
     REGEX = re.compile(r'(\d+|\?)x(\d+|\?)')
 
-    def __init__(self, name, spec):
+    def __init__(self, name, spec, nameformat):
         self._name = name
         self._spec = spec
+        self._nameformat = nameformat
 
     def _null_resize(self, w, h, image):
         return image
@@ -88,7 +90,7 @@ class _resizer(object):
     def get_thumbnail_name(self, in_path):
         new_filename = path.basename(in_path)
         (basename, ext) = path.splitext(new_filename)
-        basename = "{0}_{1}".format(basename, self._name)
+        basename = self._nameformat.format(filename=basename, thumbsize=self._name)
         new_filename = "{0}{1}".format(basename, ext)
         return new_filename
 
@@ -124,7 +126,8 @@ def resize_thumbnails(pelican):
                          pelican.settings.get('THUMBNAIL_DIR', DEFAULT_THUMBNAIL_DIR))
 
     sizes = pelican.settings.get('THUMBNAIL_SIZES', DEFAULT_THUMBNAIL_SIZES)
-    resizers = dict((k, _resizer(k, v)) for k,v in sizes.items())
+    nameformat = pelican.settings.get('THUMBNAIL_NAME_FORMAT', DEFAULT_NAME_FORMAT)
+    resizers = dict((k, _resizer(k, v, nameformat)) for k,v in sizes.items())
     logger.debug("Thumbnailer Started")
     for dirpath, _, filenames in os.walk(in_path):
         for filename in filenames:
@@ -145,10 +148,10 @@ def expand_gallery(generator, metadata):
     :param pelican: The pelican instance
     :return: None
     """
-    if "gallery" not in metadata or metadata['gallery'] is None:
-        import pprint
-        pprint.pprint(metadata)
-        return  # If no gallery specified, we do nothing
+    #if "gallery" not in metadata or metadata['gallery'] is None:
+    #    import pprint
+    #    pprint.pprint(metadata)
+    #    return  # If no gallery specified, we do nothing
 
     lines = [ ]
     base_path = _image_path(generator)
